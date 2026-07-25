@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back-of-the-Envelope Estimations</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --ink: #1b1f24;
+    --muted: #6a7280;
+    --line: #e2e5ea;
+    --accent: #2f6feb;
+    --accent-soft: #eaf1fe;
+    --good: #0f7b52;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px 120px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  header h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: -.02em; }
+  header p { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
+
+  section {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px 22px 22px;
+    margin-bottom: 20px;
+  }
+  section > h2 {
+    margin: 0 0 2px; font-size: 17px; letter-spacing: -.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  section > h2 .badge {
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    background: var(--accent-soft); border-radius: 999px; padding: 2px 8px;
+  }
+  .sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .grid.pair { grid-template-columns: repeat(2, minmax(210px, 1fr)); }
+  .grid.trio { grid-template-columns: repeat(2, minmax(210px, 1fr)) 150px; }
+  .grid + .grid { margin-top: 14px; }
+  @media (max-width: 700px) { .grid.trio { grid-template-columns: repeat(2, minmax(180px, 1fr)); } }
+  @media (max-width: 560px) { .grid.pair, .grid.trio { grid-template-columns: 1fr; } }
+
+  .stepper { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+  .stepper button {
+    border: none; border-radius: 0; background: #f7f8fa; color: #3c434d;
+    font-size: 17px; font-weight: 600; line-height: 1; padding: 0; width: 36px; flex: 0 0 36px; cursor: pointer;
+  }
+  .stepper button:hover { background: #e9ecf1; color: var(--accent); }
+  .stepper button:active { background: #dde2ea; }
+  .stepper .val {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 1px;
+    font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; user-select: none;
+  }
+  .stepper .val .x { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: #3c434d; margin-bottom: 5px; }
+  .field .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; min-height: 14px; }
+  .control { display: flex; gap: 6px; }
+  input[type=text], input[type=number], select {
+    width: 100%; padding: 8px 10px; font: inherit; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  input:disabled, select:disabled { background: #f2f3f5; color: var(--muted); }
+  select.unit { width: auto; min-width: 74px; flex: 0 0 auto; }
+  .checkline { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #3c434d; margin-top: 26px; }
+  .checkline input { width: auto; }
+
+  .results { margin-top: 20px; border-top: 1px dashed var(--line); padding-top: 18px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .card {
+    background: #fafbfc; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+  }
+  .card .k { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  .card .v { font-size: 20px; font-weight: 650; margin-top: 4px; letter-spacing: -.02em; }
+  .card .v small { font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+  .card .x { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .card.hi { background: var(--accent-soft); border-color: #cfe0fd; }
+  .card.hi .v { color: #1b4fbf; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13.5px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; font-weight: 600; }
+  thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); border-bottom: 1px solid #d5d9df; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.total td { font-weight: 650; background: #fafbfc; }
+  tbody tr.peak td { font-weight: 650; background: var(--accent-soft); color: #1b4fbf; }
+
+  footer.bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line); padding: 12px 20px;
+  }
+  .barin { max-width: 1040px; margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  button:hover { background: #f2f4f7; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: #2560d4; }
+  #status { font-size: 12.5px; color: var(--muted); margin-left: auto; }
+  #status.ok { color: var(--good); }
+  #status.err { color: #b42318; }
+  .note { font-size: 11.5px; color: var(--muted); margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Back-of-the-Envelope Estimations</h1>
+    <p>Capacity math for API traffic, database storage, and cache memory. Counts accept shorthand like <code>10k</code>, <code>5M</code>, <code>1.2B</code>.</p>
+  </header>
+
+  <!-- ───────────────────────── API TRAFFIC ───────────────────────── -->
+  <section>
+    <h2>API Traffic <span class="badge">QPS &amp; bandwidth</span></h2>
+    <p class="sub">Requests are spread evenly over 86,400 seconds/day; peak applies the multiplier.</p>
+
+    <div class="grid trio">
+      <div class="field">
+        <label for="apiReads">Read requests / day</label>
+        <div class="control"><input type="text" id="apiReads" value="10M" inputmode="decimal"></div>
+        <div class="hint" id="apiReadsHint"></div>
+      </div>
+      <div class="field">
+        <label for="apiWrites">Write requests / day</label>
+        <div class="control"><input type="text" id="apiWrites" value="1M" inputmode="decimal"></div>
+        <div class="hint" id="apiWritesHint"></div>
+      </div>
+      <div class="field">
+        <label id="peakLabel">Peak multiplier</label>
+        <div class="stepper" role="group" aria-labelledby="peakLabel">
+          <button type="button" id="peakDown" aria-label="Decrease peak multiplier">&minus;</button>
+          <div class="val"><span id="peakValue">5</span><span class="x">&times;</span></div>
+          <button type="button" id="peakUp" aria-label="Increase peak multiplier">+</button>
+        </div>
+        <input type="hidden" id="peakMultiplier" value="5">
+        <div class="hint">Peak = total &times; multiplier</div>
+      </div>
+    </div>
+
+    <div class="grid pair">
+      <div class="field">
+        <label for="readPayload">Payload size for read APIs</label>
+        <div class="control">
+          <input type="number" id="readPayload" value="2" min="0" step="any">
+          <select class="unit" id="readPayloadUnit">
+            <option value="1">B</option>
+            <option value="1024" selected>KB</option>
+            <option value="1048576">MB</option>
+          </select>
+        </div>
+        <div class="hint" id="readPayloadHint"></div>
+      </div>
+      <div class="field">
+        <label for="writePayload">Payload size for write APIs</label>
+        <div class="control">
+          <input type="number" id="writePayload" value="5" min="0" step="any">
+          <select class="unit" id="writePayloadUnit">
+            <option value="1">B</option>
+            <option value="1024" selected>KB</option>
+            <option value="1048576">MB</option>
+          </select>
+        </div>
+        <div class="hint" id="writePayloadHint"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="cards">
+        <div class="card"><div class="k">Read QPS</div><div class="v" id="readQps">—</div><div class="x">requests / second</div></div>
+        <div class="card"><div class="k">Write QPS</div><div class="v" id="writeQps">—</div><div class="x">requests / second</div></div>
+        <div class="card"><div class="k">Total QPS</div><div class="v" id="totalQps">—</div><div class="x">read + write / second</div></div>
+        <div class="card hi"><div class="k">Peak QPS</div><div class="v" id="peakQps">—</div><div class="x" id="peakQpsSplit">—</div></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Bandwidth</th><th>Bytes / s</th><th>Mbps</th><th>Gbps</th><th>Tbps</th><th>Pbps</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Read</td><td id="bwReadBytes">—</td><td id="bwReadM">—</td><td id="bwReadG">—</td><td id="bwReadT">—</td><td id="bwReadP">—</td></tr>
+          <tr><td>Write</td><td id="bwWriteBytes">—</td><td id="bwWriteM">—</td><td id="bwWriteG">—</td><td id="bwWriteT">—</td><td id="bwWriteP">—</td></tr>
+          <tr class="total"><td>Total</td><td id="bwTotBytes">—</td><td id="bwTotM">—</td><td id="bwTotG">—</td><td id="bwTotT">—</td><td id="bwTotP">—</td></tr>
+          <tr class="peak"><td>Total (peak)</td><td id="bwPeakBytes">—</td><td id="bwPeakM">—</td><td id="bwPeakG">—</td><td id="bwPeakT">—</td><td id="bwPeakP">—</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Payload sizes use binary units (1 KB = 1024 B). Network rates use decimal bits (1 Mbps = 1,000,000 bits/s), 8 bits per byte.</p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── DATABASE ───────────────────────── -->
+  <section>
+    <h2>Database Storage <span class="badge">growth over time</span></h2>
+    <p class="sub">Every write is assumed to add a new row/document of the given size. 1 year = 365 days.</p>
+
+    <div class="grid">
+      <div class="field">
+        <label for="dbWriteSize">Data written per write operation</label>
+        <div class="control">
+          <input type="number" id="dbWriteSize" value="2" min="0" step="any">
+          <select class="unit" id="dbWriteSizeUnit">
+            <option value="1">B</option>
+            <option value="1024" selected>KB</option>
+            <option value="1048576">MB</option>
+          </select>
+        </div>
+        <div class="hint" id="dbWriteSizeHint"></div>
+      </div>
+      <div class="field">
+        <label for="dbWrites">Writes / day</label>
+        <div class="control"><input type="text" id="dbWrites" value="1M" inputmode="decimal"></div>
+        <div class="hint" id="dbWritesHint"></div>
+      </div>
+      <div class="field">
+        <div class="checkline">
+          <input type="checkbox" id="dbSyncWrites" checked>
+          <label for="dbSyncWrites" style="margin:0;font-weight:500">Use writes/day from API section</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="cards">
+        <div class="card"><div class="k">1 day</div><div class="v" id="st1d">—</div><div class="x" id="st1dAlt">—</div></div>
+        <div class="card"><div class="k">30 days</div><div class="v" id="st30d">—</div><div class="x" id="st30dAlt">—</div></div>
+        <div class="card"><div class="k">1 year</div><div class="v" id="st1y">—</div><div class="x" id="st1yAlt">—</div></div>
+        <div class="card hi"><div class="k">5 years</div><div class="v" id="st5y">—</div><div class="x" id="st5yAlt">—</div></div>
+      </div>
+      <p class="note">Storage uses binary units (1 GB = 1024 MB). Excludes indexes, replication, and compression.</p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── CACHE ───────────────────────── -->
+  <section>
+    <h2>Cache Memory <span class="badge">80 / 20 rule</span></h2>
+    <p class="sub">80% of traffic hits 20% of the data, so cache the hot slice of the working set.</p>
+
+    <div class="grid">
+      <div class="field">
+        <label for="wsBasis">Working set basis</label>
+        <div class="control">
+          <select id="wsBasis">
+            <option value="1">Database: 1 day of data</option>
+            <option value="30">Database: 30 days of data</option>
+            <option value="365" selected>Database: 1 year of data</option>
+            <option value="1825">Database: 5 years of data</option>
+            <option value="custom">Custom value</option>
+          </select>
+        </div>
+        <div class="hint">Pick a horizon or enter your own size</div>
+      </div>
+      <div class="field">
+        <label for="wsCustom">Working set size</label>
+        <div class="control">
+          <input type="number" id="wsCustom" value="100" min="0" step="any" disabled>
+          <select class="unit" id="wsCustomUnit" disabled>
+            <option value="1048576">MB</option>
+            <option value="1073741824" selected>GB</option>
+            <option value="1099511627776">TB</option>
+            <option value="1125899906842624">PB</option>
+          </select>
+        </div>
+        <div class="hint" id="wsHint">From database section</div>
+      </div>
+      <div class="field">
+        <label for="hotPct">Hot data share (%)</label>
+        <div class="control"><input type="number" id="hotPct" value="20" min="0" max="100" step="any"></div>
+        <div class="hint">80/20 rule &rarr; 20%</div>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="cards">
+        <div class="card"><div class="k">Working set</div><div class="v" id="wsOut">—</div><div class="x" id="wsOutAlt">—</div></div>
+        <div class="card hi"><div class="k">Memory needed</div><div class="v" id="memOut">—</div><div class="x" id="memOutAlt">—</div></div>
+        <div class="card"><div class="k">Cache nodes</div><div class="v" id="nodesOut">—</div><div class="x" id="nodesAlt">—</div></div>
+      </div>
+      <div class="grid" style="margin-top:14px;max-width:260px">
+        <div class="field">
+          <label for="nodeRam">RAM per cache node</label>
+          <div class="control">
+            <input type="number" id="nodeRam" value="64" min="1" step="any">
+            <select class="unit" id="nodeRamUnit">
+              <option value="1073741824" selected>GB</option>
+              <option value="1099511627776">TB</option>
+            </select>
+          </div>
+          <div class="hint">Used for the node count above</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer class="bar">
+  <div class="barin">
+    <button class="primary" id="btnSave">Save</button>
+    <button id="btnLoad">Load</button>
+    <button id="btnReset">Reset</button>
+    <input type="file" id="filePick" accept="application/json,.json" hidden>
+    <span id="status"></span>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+const FILE_NAME = "boe-estimations.json";
+const SEC_PER_DAY = 86400;
+
+/* ── helpers ─────────────────────────────────────────────── */
+
+const $ = id => document.getElementById(id);
+
+const num = (n, d = 2) => Number.isFinite(n)
+  ? n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d })
+  : "—";
+
+const int = n => Number.isFinite(n) ? Math.round(n).toLocaleString("en-US") : "—";
+
+// Accepts "1200", "1.2k", "5 M", "3B", "1e6", "12,000"
+function parseCount(raw) {
+  if (raw == null) return NaN;
+  const s = String(raw).trim().replace(/[, _]/g, "");
+  if (!s) return NaN;
+  const m = s.match(/^([0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?)([kmbgt])?$/i);
+  if (!m) return NaN;
+  const mult = { k: 1e3, m: 1e6, b: 1e9, g: 1e9, t: 1e12 }[(m[2] || "").toLowerCase()] || 1;
+  return parseFloat(m[1]) * mult;
+}
+
+const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+function fmtBytes(bytes) {
+  if (!Number.isFinite(bytes)) return { v: "—", u: "" };
+  if (bytes === 0) return { v: "0.00", u: "B" };
+  let i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024));
+  i = Math.min(Math.max(i, 0), BYTE_UNITS.length - 1);
+  return { v: num(bytes / Math.pow(1024, i)), u: BYTE_UNITS[i] };
+}
+
+const BIT_UNITS = ["bps", "Kbps", "Mbps", "Gbps", "Tbps", "Pbps"];
+function fmtBits(bps) {
+  if (!Number.isFinite(bps)) return { v: "—", u: "" };
+  if (bps === 0) return { v: "0.00", u: "bps" };
+  let i = Math.floor(Math.log(Math.abs(bps)) / Math.log(1000));
+  i = Math.min(Math.max(i, 0), BIT_UNITS.length - 1);
+  return { v: num(bps / Math.pow(1000, i)), u: BIT_UNITS[i] };
+}
+
+function setBig(id, obj) {
+  $(id).innerHTML = obj.v + (obj.u ? ' <small>' + obj.u + "</small>" : "");
+}
+
+function countHint(inputId, hintId) {
+  const v = parseCount($(inputId).value);
+  $(hintId).textContent = Number.isFinite(v)
+    ? "= " + int(v) + " /day  ·  " + num(v / SEC_PER_DAY) + " /sec"
+    : "enter a number (e.g. 5M)";
+  return v;
+}
+
+function sizeHint(inputId, unitId, hintId) {
+  const bytes = (parseFloat($(inputId).value) || 0) * parseFloat($(unitId).value);
+  const f = fmtBytes(bytes);
+  $(hintId).textContent = "= " + int(bytes) + " bytes (" + f.v + " " + f.u + ")";
+  return bytes;
+}
+
+/* ── calculations ────────────────────────────────────────── */
+
+let dbBytesPerDay = 0;
+
+function calcApi() {
+  const reads = countHint("apiReads", "apiReadsHint");
+  const writes = countHint("apiWrites", "apiWritesHint");
+  const readB = sizeHint("readPayload", "readPayloadUnit", "readPayloadHint");
+  const writeB = sizeHint("writePayload", "writePayloadUnit", "writePayloadHint");
+  const peak = parseFloat($("peakMultiplier").value) || 0;
+  $("peakValue").textContent = peak;
+
+  const rQps = (reads || 0) / SEC_PER_DAY;
+  const wQps = (writes || 0) / SEC_PER_DAY;
+  const tQps = rQps + wQps;
+
+  $("readQps").innerHTML = num(rQps) + ' <small>QPS</small>';
+  $("writeQps").innerHTML = num(wQps) + ' <small>QPS</small>';
+  $("totalQps").innerHTML = num(tQps) + ' <small>QPS</small>';
+  $("peakQps").innerHTML = num(tQps * peak) + ' <small>QPS</small>';
+  $("peakQpsSplit").textContent =
+    peak + "\u00d7 total  ·  " + num(rQps * peak) + " read + " + num(wQps * peak) + " write";
+
+  const rows = [
+    ["bwRead", rQps * readB],
+    ["bwWrite", wQps * writeB],
+    ["bwTot", rQps * readB + wQps * writeB],
+    ["bwPeak", (rQps * readB + wQps * writeB) * peak]
+  ];
+  for (const [pre, bytesPerSec] of rows) {
+    const f = fmtBytes(bytesPerSec);
+    const bits = bytesPerSec * 8;
+    $(pre + "Bytes").textContent = f.v + " " + f.u + "/s";
+    $(pre + "M").textContent = num(bits / 1e6);
+    $(pre + "G").textContent = num(bits / 1e9);
+    $(pre + "T").textContent = num(bits / 1e12);
+    $(pre + "P").textContent = num(bits / 1e15);
+  }
+}
+
+function calcDb() {
+  const sync = $("dbSyncWrites").checked;
+  $("dbWrites").disabled = sync;
+  if (sync) $("dbWrites").value = $("apiWrites").value;
+
+  const writes = countHint("dbWrites", "dbWritesHint") || 0;
+  const size = sizeHint("dbWriteSize", "dbWriteSizeUnit", "dbWriteSizeHint");
+
+  dbBytesPerDay = writes * size;
+
+  const horizons = [["st1d", 1], ["st30d", 30], ["st1y", 365], ["st5y", 365 * 5]];
+  for (const [id, days] of horizons) {
+    const bytes = dbBytesPerDay * days;
+    setBig(id, fmtBytes(bytes));
+    $(id + "Alt").textContent = int(bytes) + " bytes";
+  }
+}
+
+function calcCache() {
+  const basis = $("wsBasis").value;
+  const custom = basis === "custom";
+  $("wsCustom").disabled = !custom;
+  $("wsCustomUnit").disabled = !custom;
+
+  let ws;
+  if (custom) {
+    ws = (parseFloat($("wsCustom").value) || 0) * parseFloat($("wsCustomUnit").value);
+    $("wsHint").textContent = "Custom working set";
+  } else {
+    const days = parseFloat(basis);
+    ws = dbBytesPerDay * days;
+    $("wsHint").textContent = "From database section (" + int(days) + " day" + (days === 1 ? "" : "s") + ")";
+    const f = fmtBytes(ws);
+    const unitVal = Math.pow(1024, Math.min(Math.max(BYTE_UNITS.indexOf(f.u), 2), 5));
+    $("wsCustomUnit").value = String(unitVal);
+    $("wsCustom").value = (ws / unitVal).toFixed(2);
+  }
+
+  const pct = parseFloat($("hotPct").value) || 0;
+  const mem = ws * (pct / 100);
+  const nodeRam = (parseFloat($("nodeRam").value) || 0) * parseFloat($("nodeRamUnit").value);
+
+  setBig("wsOut", fmtBytes(ws));
+  $("wsOutAlt").textContent = "100% of data set";
+  setBig("memOut", fmtBytes(mem));
+  $("memOutAlt").textContent = num(pct) + "% of working set";
+
+  if (nodeRam > 0) {
+    const nodes = Math.ceil(mem / nodeRam);
+    const r = fmtBytes(nodeRam);
+    $("nodesOut").innerHTML = int(nodes) + ' <small>nodes</small>';
+    $("nodesAlt").textContent = "at " + r.v + " " + r.u + " RAM each";
+  } else {
+    $("nodesOut").textContent = "—";
+    $("nodesAlt").textContent = "set RAM per node";
+  }
+}
+
+function recalc() {
+  calcApi();
+  calcDb();
+  calcCache();
+  try { localStorage.setItem(FILE_NAME, JSON.stringify(collect())); } catch (e) { /* ignore */ }
+}
+
+/* ── state ───────────────────────────────────────────────── */
+
+const FIELDS = [
+  "apiReads", "apiWrites", "readPayload", "readPayloadUnit", "writePayload", "writePayloadUnit",
+  "peakMultiplier", "dbWriteSize", "dbWriteSizeUnit", "dbWrites", "dbSyncWrites",
+  "wsBasis", "wsCustom", "wsCustomUnit", "hotPct", "nodeRam", "nodeRamUnit"
+];
+
+function collect() {
+  const out = { _schema: "boe-estimations/v1", savedAt: new Date().toISOString(), values: {} };
+  for (const id of FIELDS) {
+    const el = $(id);
+    out.values[id] = el.type === "checkbox" ? el.checked : el.value;
+  }
+  return out;
+}
+
+function apply(data) {
+  const vals = (data && data.values) || data || {};
+  for (const id of FIELDS) {
+    if (!(id in vals)) continue;
+    const el = $(id);
+    if (el.type === "checkbox") el.checked = !!vals[id];
+    else el.value = vals[id];
+  }
+  recalc();
+}
+
+/* ── save / load ─────────────────────────────────────────── */
+
+let fileHandle = null;
+let statusTimer = null;
+
+function status(msg, kind) {
+  const el = $("status");
+  el.textContent = msg;
+  el.className = kind || "";
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.textContent = ""; el.className = ""; }, 6000);
+}
+
+const PICKER_TYPES = [{ description: "JSON", accept: { "application/json": [".json"] } }];
+
+async function ensureWritable(handle) {
+  if (!handle.queryPermission) return true;
+  if (await handle.queryPermission({ mode: "readwrite" }) === "granted") return true;
+  return await handle.requestPermission({ mode: "readwrite" }) === "granted";
+}
+
+async function save() {
+  const json = JSON.stringify(collect(), null, 2);
+
+  if (window.showSaveFilePicker) {
+    try {
+      if (!fileHandle || !(await ensureWritable(fileHandle))) {
+        fileHandle = await window.showSaveFilePicker({ suggestedName: FILE_NAME, types: PICKER_TYPES });
+      }
+      const w = await fileHandle.createWritable();
+      await w.write(json);
+      await w.close();
+      status("Saved to " + fileHandle.name, "ok");
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") { status("Save cancelled"); return; }
+      fileHandle = null;
+    }
+  }
+
+  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = FILE_NAME;
+  a.click();
+  URL.revokeObjectURL(url);
+  status("Downloaded " + FILE_NAME + " — keep it next to this page", "ok");
+}
+
+async function load() {
+  if (window.showOpenFilePicker) {
+    try {
+      const [handle] = await window.showOpenFilePicker({ types: PICKER_TYPES, multiple: false });
+      fileHandle = handle;
+      const text = await (await handle.getFile()).text();
+      apply(JSON.parse(text));
+      status("Loaded " + handle.name, "ok");
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") { status("Load cancelled"); return; }
+    }
+  }
+  $("filePick").click();
+}
+
+$("filePick").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    apply(JSON.parse(await f.text()));
+    status("Loaded " + f.name, "ok");
+  } catch (err) {
+    status("Could not read that file: " + err.message, "err");
+  }
+  e.target.value = "";
+});
+
+$("btnSave").addEventListener("click", save);
+$("btnLoad").addEventListener("click", load);
+$("btnReset").addEventListener("click", () => {
+  if (!confirm("Reset all inputs to their defaults?")) return;
+  localStorage.removeItem(FILE_NAME);
+  location.reload();
+});
+
+/* ── wire up ─────────────────────────────────────────────── */
+
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", recalc);
+  el.addEventListener("change", recalc);
+});
+
+function stepPeak(delta) {
+  const el = $("peakMultiplier");
+  el.value = Math.min(100, Math.max(1, (parseFloat(el.value) || 1) + delta));
+  recalc();
+}
+$("peakUp").addEventListener("click", () => stepPeak(1));
+$("peakDown").addEventListener("click", () => stepPeak(-1));
+
+try {
+  const cached = localStorage.getItem(FILE_NAME);
+  if (cached) { apply(JSON.parse(cached)); status("Restored your last session"); }
+} catch (e) { /* ignore */ }
+
+recalc();
+</script>
+</body>
+</html>
