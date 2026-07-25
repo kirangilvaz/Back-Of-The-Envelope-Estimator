@@ -1,6 +1,6 @@
 # Back-of-the-Envelope Estimations
 
-A single-file calculator for quick capacity math: API traffic, database storage, and cache memory.
+<img width="526" height="795" alt="image" src="https://github.com/user-attachments/assets/16acc6b2-030d-44db-aea0-b40be1c2f02f" />
 
 ## Getting started
 
