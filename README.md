@@ -17,7 +17,8 @@ You get back:
 - **Read QPS / Write QPS** — requests per day ÷ 86,400
 - **Total QPS** — read QPS + write QPS
 - **Peak QPS** — total QPS × the peak multiplier
-- **Bandwidth table** — read, write, total, and peak rows in bytes/s, Mbps, Gbps, Tbps, and Pbps
+- **Data / day** — read, write, and total bytes moved per day (requests/day × payload size)
+- **Bandwidth table** — read, write, total, and peak rows in bytes/s, Mbps, and Gbps
 
 ## Database Storage
 

@@ -80,6 +80,7 @@
 
   .results { margin-top: 20px; border-top: 1px dashed var(--line); padding-top: 18px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .cards + .cards { margin-top: 12px; }
   .card {
     background: #fafbfc; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
   }
@@ -187,17 +188,23 @@
         <div class="card hi"><div class="k">Peak QPS</div><div class="v" id="peakQps">—</div><div class="x" id="peakQpsSplit">—</div></div>
       </div>
 
+      <div class="cards">
+        <div class="card"><div class="k">Read data / day</div><div class="v" id="dtRead">—</div><div class="x" id="dtReadAlt">—</div></div>
+        <div class="card"><div class="k">Write data / day</div><div class="v" id="dtWrite">—</div><div class="x" id="dtWriteAlt">—</div></div>
+        <div class="card"><div class="k">Total data / day</div><div class="v" id="dtTotal">—</div><div class="x" id="dtTotalAlt">—</div></div>
+      </div>
+
       <table>
         <thead>
           <tr>
-            <th>Bandwidth</th><th>Bytes / s</th><th>Mbps</th><th>Gbps</th><th>Tbps</th><th>Pbps</th>
+            <th>Bandwidth</th><th>Bytes / s</th><th>Mbps</th><th>Gbps</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Read</td><td id="bwReadBytes">—</td><td id="bwReadM">—</td><td id="bwReadG">—</td><td id="bwReadT">—</td><td id="bwReadP">—</td></tr>
-          <tr><td>Write</td><td id="bwWriteBytes">—</td><td id="bwWriteM">—</td><td id="bwWriteG">—</td><td id="bwWriteT">—</td><td id="bwWriteP">—</td></tr>
-          <tr class="total"><td>Total</td><td id="bwTotBytes">—</td><td id="bwTotM">—</td><td id="bwTotG">—</td><td id="bwTotT">—</td><td id="bwTotP">—</td></tr>
-          <tr class="peak"><td>Total (peak)</td><td id="bwPeakBytes">—</td><td id="bwPeakM">—</td><td id="bwPeakG">—</td><td id="bwPeakT">—</td><td id="bwPeakP">—</td></tr>
+          <tr><td>Read</td><td id="bwReadBytes">—</td><td id="bwReadM">—</td><td id="bwReadG">—</td></tr>
+          <tr><td>Write</td><td id="bwWriteBytes">—</td><td id="bwWriteM">—</td><td id="bwWriteG">—</td></tr>
+          <tr class="total"><td>Total</td><td id="bwTotBytes">—</td><td id="bwTotM">—</td><td id="bwTotG">—</td></tr>
+          <tr class="peak"><td>Total (peak)</td><td id="bwPeakBytes">—</td><td id="bwPeakM">—</td><td id="bwPeakG">—</td></tr>
         </tbody>
       </table>
       <p class="note">Payload sizes use binary units (1 KB = 1024 B). Network rates use decimal bits (1 Mbps = 1,000,000 bits/s), 8 bits per byte.</p>
@@ -354,15 +361,6 @@ function fmtBytes(bytes) {
   return { v: num(bytes / Math.pow(1024, i)), u: BYTE_UNITS[i] };
 }
 
-const BIT_UNITS = ["bps", "Kbps", "Mbps", "Gbps", "Tbps", "Pbps"];
-function fmtBits(bps) {
-  if (!Number.isFinite(bps)) return { v: "—", u: "" };
-  if (bps === 0) return { v: "0.00", u: "bps" };
-  let i = Math.floor(Math.log(Math.abs(bps)) / Math.log(1000));
-  i = Math.min(Math.max(i, 0), BIT_UNITS.length - 1);
-  return { v: num(bps / Math.pow(1000, i)), u: BIT_UNITS[i] };
-}
-
 function setBig(id, obj) {
   $(id).innerHTML = obj.v + (obj.u ? ' <small>' + obj.u + "</small>" : "");
 }
@@ -398,6 +396,18 @@ function calcApi() {
   const wQps = (writes || 0) / SEC_PER_DAY;
   const tQps = rQps + wQps;
 
+  const readPerDay = (reads || 0) * readB;
+  const writePerDay = (writes || 0) * writeB;
+  const transfer = [
+    ["dtRead", readPerDay, "read payload \u00d7 reads/day"],
+    ["dtWrite", writePerDay, "write payload \u00d7 writes/day"],
+    ["dtTotal", readPerDay + writePerDay, "read + write per day"]
+  ];
+  for (const [id, bytes, caption] of transfer) {
+    setBig(id, fmtBytes(bytes));
+    $(id + "Alt").textContent = caption;
+  }
+
   $("readQps").innerHTML = num(rQps) + ' <small>QPS</small>';
   $("writeQps").innerHTML = num(wQps) + ' <small>QPS</small>';
   $("totalQps").innerHTML = num(tQps) + ' <small>QPS</small>';
@@ -417,8 +427,6 @@ function calcApi() {
     $(pre + "Bytes").textContent = f.v + " " + f.u + "/s";
     $(pre + "M").textContent = num(bits / 1e6);
     $(pre + "G").textContent = num(bits / 1e9);
-    $(pre + "T").textContent = num(bits / 1e12);
-    $(pre + "P").textContent = num(bits / 1e15);
   }
 }
 
